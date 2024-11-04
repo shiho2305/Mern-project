@@ -105,6 +105,24 @@ const PostWidget = ({
     }
   };
 
+  // Function to handle deleting a comment
+  const handleDeleteComment = async (commentId) => {
+    const response = await fetch(`http://localhost:3001/posts/${postId}/comments/${commentId}`, {
+      method: "DELETE",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ userId: loggedInUserId }),
+    });
+  
+    if (response.ok) {
+      setLocalComments((prevComments) => prevComments.filter(comment => comment._id !== commentId));
+    } else {
+      console.error("Failed to delete comment");
+    }
+  };
+
   return (
     <WidgetWrapper m="2rem 0">
       <Friend
@@ -152,7 +170,6 @@ const PostWidget = ({
       </FlexBetween>
       {isComments && (
         <Box mt="0.5rem">
-          {/* Comment input section */}
           <Box display="flex" alignItems="center" mt="0.5rem">
             <IconButton>
               <AccountCircleIcon fontSize="large" />
@@ -169,7 +186,7 @@ const PostWidget = ({
             <Button
               variant="contained"
               color="primary"
-              onClick={handleAddComment} // Sử dụng hàm handleAddComment đã định nghĩa
+              onClick={handleAddComment} 
               sx={{ ml: "0.5rem" }}
             >
               Post
@@ -217,6 +234,17 @@ const PostWidget = ({
                 >
                   {editingCommentId === comment._id ? "Save" : "Edit"}
                 </Button>
+                {comment.userId === loggedInUserId && ( 
+                  <Button
+                    onClick={() => handleDeleteComment(comment._id)}
+                    variant="contained"
+                    color="secondary"
+                    size="small"
+                    sx={{ marginLeft: "0.5rem", marginTop: "0.5rem" }}
+                  >
+                    Delete
+                  </Button>
+                )}
               </Box>
             </Box>
           ))}

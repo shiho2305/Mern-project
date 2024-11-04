@@ -135,6 +135,34 @@ export const addComment = async (req, res) => {
   }
 };
 
+/* DELETE COMMENT */
+export const deleteComment = async (req, res) => {
+  try {
+    const { id, commentId } = req.params; 
+    const { userId } = req.body; 
+
+    const comment = await Comment.findById(commentId);
+    if (!comment) {
+      return res.status(404).json({ message: "Comment does not exist" });
+    }
+
+    if (comment.userId !== userId) {
+      return res.status(403).json({ message: "You can only delete your own comments" });
+    }
+
+    await Comment.findByIdAndDelete(commentId);
+
+    await Post.findByIdAndUpdate(
+      id,
+      { $pull: { comments: commentId } },
+      { new: true }
+    );
+
+    res.status(200).json({ message: "Comment deleted successfully" });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
 
 
 /* UPDATE COMMENT */
