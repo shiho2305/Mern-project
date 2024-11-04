@@ -28,7 +28,6 @@ const registerSchema = yup.object().shape({
   phone: yup.string().required("required"),
   location: yup.string().required("required"),
   picture: yup.string().required("required"),
-  birthday: yup.date().required("required"),
   gender: yup.string().required("required"),
   role: yup.string().required("required"),
 });
@@ -196,8 +195,8 @@ const Form = () => {
                     onBlur={handleBlur}
                     error={Boolean(touched.gender) && Boolean(errors.gender)}
                   >
-                    <MenuItem value="male">Male</MenuItem>
-                    <MenuItem value="female">Female</MenuItem>
+                    <MenuItem value="Male">Male</MenuItem>
+                    <MenuItem value="Female">Female</MenuItem>
                   </Select>
                 </FormControl>
                 <FormControl sx={{ gridColumn: "span 4" }}>
