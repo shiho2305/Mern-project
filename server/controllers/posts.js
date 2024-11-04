@@ -1,11 +1,15 @@
 import Post from "../models/Post.js";
 import User from "../models/User.js";
+import Comment from "../models/Comments.js";
 
 /* CREATE */
 export const createPost = async (req, res) => {
   try {
     const { userId, description, picturePath } = req.body;
     const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
     const newPost = new Post({
       userId,
       firstName: user.firstName,
@@ -19,7 +23,7 @@ export const createPost = async (req, res) => {
     });
     await newPost.save();
 
-    const post = await Post.find();
+    const post = await Post.find().sort({createdAt: -1});
     res.status(201).json(post);
   } catch (err) {
     res.status(409).json({ message: err.message });
@@ -27,9 +31,33 @@ export const createPost = async (req, res) => {
 };
 
 /* READ */
+// export const getFeedPosts = async (req, res) => {
+//   try {
+//     const post = await Post.find().populate('comments').sort({createdAt: -1});
+//     res.status(200).json(post);
+//   } catch (err) {
+//     res.status(404).json({ message: err.message });
+//   }
+// };
+
+// export const getUserPosts = async (req, res) => {
+//   try {
+//     const { userId } = req.params;
+//     const post = await Post.find({ userId });
+//     res.status(200).json(post);
+//   } catch (err) {
+//     res.status(404).json({ message: err.message });
+//   }
+// };
+
 export const getFeedPosts = async (req, res) => {
   try {
-    const post = await Post.find();
+    const post = await Post.find()
+      .populate({
+        path: 'comments',
+        populate: { path: 'userId', select: 'firstName lastName picturePath' },
+      })
+      .sort({ createdAt: -1 });
     res.status(200).json(post);
   } catch (err) {
     res.status(404).json({ message: err.message });
@@ -39,7 +67,12 @@ export const getFeedPosts = async (req, res) => {
 export const getUserPosts = async (req, res) => {
   try {
     const { userId } = req.params;
-    const post = await Post.find({ userId });
+    const post = await Post.find({ userId })
+      .populate({
+        path: 'comments',
+        populate: { path: 'userId', select: 'firstName lastName picturePath' },
+      })
+      .sort({ createdAt: -1 });
     res.status(200).json(post);
   } catch (err) {
     res.status(404).json({ message: err.message });
@@ -73,33 +106,49 @@ export const likePost = async (req, res) => {
 };
 
 
-/*ADD COMMENT */
+/* ADD COMMENT */
 export const addComment = async (req, res) => {
   try {
     const { id } = req.params; 
     const { userId, content } = req.body;
-    const post = await Post.findById(id);
 
-    post.comments.push({ userId, content, createdAt: new Date() });
+    const newComment = new Comment({
+      userId,
+      content,
+      createdAt: new Date(),
+    });
+    await newComment.save();
+
+    const post = await Post.findById(id);
+    post.comments.push(newComment._id);
     await post.save();
 
-    res.status(201).json(post);
+    const updatedPost = await Post.findById(id)
+      .populate({
+        path: 'comments',
+        populate: { path: 'userId', select: 'firstName lastName picturePath' },
+      });
+
+    res.status(201).json(updatedPost);
   } catch (err) {
     res.status(409).json({ message: err.message });
   }
 };
 
-/*UPDATE COMMENT */
+
+
+/* UPDATE COMMENT */
 export const editComment = async (req, res) => {
   try {
     const { id, commentId } = req.params; 
     const { content } = req.body;
-    const post = await Post.findById(id);
-
-    const comment = post.comments.id(commentId);
+    
+    const comment = await Comment.findById(commentId);
     if (comment) {
       comment.content = content;
-      await post.save();
+      await comment.save();
+      
+      const post = await Post.findById(id).populate('comments');
       res.status(200).json(post);
     } else {
       res.status(404).json({ message: "Comment does not exist" });
@@ -109,15 +158,21 @@ export const editComment = async (req, res) => {
   }
 };
 
-
-/*REPLY COMMENT */
+/* REPLY COMMENT */
 export const replyToComment = async (req, res) => {
   try {
     const { id } = req.params; 
     const { userId, content, replyTo } = req.body; 
-    const post = await Post.findById(id);
 
-    post.comments.push({ userId, content, createdAt: new Date(), replyTo });
+    const newComment = new Comment({
+      userId,
+      content,
+      replyTo,
+    });
+    await newComment.save();
+
+    const post = await Post.findById(id);
+    post.comments.push(newComment._id);
     await post.save();
 
     res.status(201).json(post);
@@ -125,5 +180,6 @@ export const replyToComment = async (req, res) => {
     res.status(409).json({ message: err.message });
   }
 };
+
 
 

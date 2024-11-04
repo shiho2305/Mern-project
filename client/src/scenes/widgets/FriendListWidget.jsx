@@ -9,7 +9,10 @@ const FriendListWidget = ({ userId }) => {
   const dispatch = useDispatch();
   const { palette } = useTheme();
   const token = useSelector((state) => state.token);
-  const friends = useSelector((state) => state.user.friends) || [];
+  const friends = useSelector((state) => {
+    const friendsData = state.user?.friends;
+    return Array.isArray(friendsData) ? friendsData : []; 
+  });
 
   const getFriends = async () => {
     const response = await fetch(
@@ -19,10 +22,19 @@ const FriendListWidget = ({ userId }) => {
         headers: { Authorization: `Bearer ${token}` },
       }
     );
-    const data = await response.json();
-    dispatch(setFriends({ friends: data }));
-  };
 
+    if (!response.ok) {
+      console.error('Failed to fetch friends:', response.statusText);
+      return;
+    }
+
+    const data = await response.json();
+    if (Array.isArray(data)) {
+      dispatch(setFriends({ friends: data }));
+    } else {
+      console.error("Expected an array of friends, but got:", data);
+    }
+  };
   useEffect(() => {
     getFriends();
   }, []); 
