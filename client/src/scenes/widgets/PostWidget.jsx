@@ -4,9 +4,18 @@ import {
   FavoriteOutlined,
   ShareOutlined,
 } from "@mui/icons-material";
-import EditIcon from '@mui/icons-material/Edit';
-import AccountCircleIcon from '@mui/icons-material/AccountCircle';
-import { Box, Divider, IconButton, Typography, useTheme, TextField, Button,Avatar} from "@mui/material";
+import EditIcon from "@mui/icons-material/Edit";
+import AccountCircleIcon from "@mui/icons-material/AccountCircle";
+import {
+  Box,
+  Divider,
+  IconButton,
+  Typography,
+  useTheme,
+  TextField,
+  Button,
+  Avatar,
+} from "@mui/material";
 import FlexBetween from "components/FlexBetween";
 import Friend from "components/Friend";
 import WidgetWrapper from "components/WidgetWrapper";
@@ -28,7 +37,7 @@ const PostWidget = ({
   const [isComments, setIsComments] = useState(false);
   const [newComment, setNewComment] = useState("");
   const [localComments, setLocalComments] = useState(comments);
-  
+
   const dispatch = useDispatch();
   const token = useSelector((state) => state.token);
   const loggedInUserId = useSelector((state) => state.user._id);
@@ -55,16 +64,19 @@ const PostWidget = ({
 
   // Function to handle adding a new comment
   const handleAddComment = async () => {
-    if (newComment.trim() === "") return; // Kiểm tra nếu comment không rỗng
+    if (newComment.trim() === "") return;
 
-    const response = await fetch(`http://localhost:3001/posts/${postId}/comments`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ userId: loggedInUserId, content: newComment }),
-    });
+    const response = await fetch(
+      `http://localhost:3001/posts/${postId}/comments`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ userId: loggedInUserId, content: newComment }),
+      }
+    );
 
     if (response.ok) {
       const updatedPost = await response.json();
@@ -84,20 +96,23 @@ const PostWidget = ({
 
   // Function to save edited comment
   const handleSaveEdit = async (commentId) => {
-    const response = await fetch(`http://localhost:3001/posts/${postId}/comments/${commentId}`, {
-      method: "PATCH", 
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ content: editedContent }),
-    });
+    const response = await fetch(
+      `http://localhost:3001/posts/${postId}/comments/${commentId}`,
+      {
+        method: "PATCH",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ content: editedContent }),
+      }
+    );
 
     if (response.ok) {
       const updatedPost = await response.json();
-      dispatch(setPost({ post: updatedPost })); 
+      dispatch(setPost({ post: updatedPost }));
 
-      setLocalComments(updatedPost.comments); 
+      setLocalComments(updatedPost.comments);
       setEditingCommentId(null);
       setEditedContent("");
     } else {
@@ -107,17 +122,22 @@ const PostWidget = ({
 
   // Function to handle deleting a comment
   const handleDeleteComment = async (commentId) => {
-    const response = await fetch(`http://localhost:3001/posts/${postId}/comments/${commentId}`, {
-      method: "DELETE",
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ userId: loggedInUserId }),
-    });
-  
+    const response = await fetch(
+      `http://localhost:3001/posts/${postId}/comments/${commentId}`,
+      {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ userId: loggedInUserId }),
+      }
+    );
+
     if (response.ok) {
-      setLocalComments((prevComments) => prevComments.filter(comment => comment._id !== commentId));
+      setLocalComments((prevComments) =>
+        prevComments.filter((comment) => comment._id !== commentId)
+      );
     } else {
       console.error("Failed to delete comment");
     }
@@ -160,7 +180,7 @@ const PostWidget = ({
             <IconButton onClick={() => setIsComments(!isComments)}>
               <ChatBubbleOutlineOutlined />
             </IconButton>
-            <Typography>{comments?.length}</Typography>
+            <Typography>{localComments.length}</Typography>
           </FlexBetween>
         </FlexBetween>
 
@@ -186,23 +206,23 @@ const PostWidget = ({
             <Button
               variant="contained"
               color="primary"
-              onClick={handleAddComment} 
+              onClick={handleAddComment}
               sx={{ ml: "0.5rem" }}
             >
               Post
             </Button>
           </Box>
-          
+
           {localComments.map((comment) => (
             <Box key={comment._id} mt="1rem" display="flex" alignItems="start">
               <Avatar
                 src={comment.userPicturePath}
-                alt={comment.userName}
+                alt={comment.name}
                 sx={{ width: 40, height: 40, mr: 2 }}
               />
               <Box flex={1}>
                 <Typography variant="body2" fontWeight="bold">
-                  {comment.userName}
+                  {name || "Unknown"}
                 </Typography>
                 <Typography variant="caption" color="textSecondary">
                   {new Date(comment.createdAt).toLocaleString()}
@@ -221,29 +241,31 @@ const PostWidget = ({
                     {comment.content}
                   </Typography>
                 )}
-                <Button
-                  onClick={() =>
-                    editingCommentId === comment._id
-                      ? handleSaveEdit(comment._id)
-                      : handleEditComment(comment._id, comment.content)
-                  }
-                  variant="contained"
-                  color="primary"
-                  size="small"
-                  sx={{ marginTop: "0.5rem" }}
-                >
-                  {editingCommentId === comment._id ? "Save" : "Edit"}
-                </Button>
-                {comment.userId === loggedInUserId && ( 
-                  <Button
-                    onClick={() => handleDeleteComment(comment._id)}
-                    variant="contained"
-                    color="secondary"
-                    size="small"
-                    sx={{ marginLeft: "0.5rem", marginTop: "0.5rem" }}
-                  >
-                    Delete
-                  </Button>
+                {comment.userId === loggedInUserId && (
+                  <>
+                    <Button
+                      onClick={() =>
+                        editingCommentId === comment._id
+                          ? handleSaveEdit(comment._id)
+                          : handleEditComment(comment._id, comment.content)
+                      }
+                      variant="contained"
+                      color="primary"
+                      size="small"
+                      sx={{ marginTop: "0.5rem" }}
+                    >
+                      {editingCommentId === comment._id ? "Save" : "Edit"}
+                    </Button>
+                    <Button
+                      onClick={() => handleDeleteComment(comment._id)}
+                      variant="contained"
+                      color="secondary"
+                      size="small"
+                      sx={{ marginLeft: "0.5rem", marginTop: "0.5rem" }}
+                    >
+                      Delete
+                    </Button>
+                  </>
                 )}
               </Box>
             </Box>
