@@ -19,7 +19,7 @@ import {
 import FlexBetween from "components/FlexBetween";
 import Friend from "components/Friend";
 import WidgetWrapper from "components/WidgetWrapper";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { setPost } from "state";
 
@@ -37,6 +37,7 @@ const PostWidget = ({
   const [isComments, setIsComments] = useState(false);
   const [newComment, setNewComment] = useState("");
   const [localComments, setLocalComments] = useState(comments);
+  const [commentUsers, setCommentUsers] = useState({});
 
   const dispatch = useDispatch();
   const token = useSelector((state) => state.token);
@@ -48,6 +49,8 @@ const PostWidget = ({
   const { palette } = useTheme();
   const main = palette.neutral.main;
   const primary = palette.primary.main;
+
+  const [user, setUser] = useState({ firstName: "", lastName: "" });
 
   const patchLike = async () => {
     const response = await fetch(`http://localhost:3001/posts/${postId}/like`, {
@@ -143,6 +146,41 @@ const PostWidget = ({
     }
   };
 
+  const getUser = async () => {
+    try {
+      const response = await fetch(
+        `http://localhost:3001/users/${postUserId}`,
+        {
+          method: "GET",
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+      const data = await response.json();
+      setUser({ firstName: data.firstName, lastName: data.lastName });
+    } catch (error) {
+      console.error("Failed to fetch user data", error);
+    }
+  };
+
+  const getCommentUser = async (userId) => {
+    if (!commentUsers[userId]) {
+      const response = await fetch(`http://localhost:3001/users/${userId}`, {
+        method: "GET",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await response.json();
+      setCommentUsers((prevUsers) => ({
+        ...prevUsers,
+        [userId]: { firstName: data.firstName, lastName: data.lastName },
+      }));
+    }
+  };
+
+  useEffect(() => {
+    getUser();
+    localComments.forEach((comment) => getCommentUser(comment.userId));
+  }, [postUserId, localComments]);
+
   return (
     <WidgetWrapper m="2rem 0">
       <Friend
@@ -217,12 +255,15 @@ const PostWidget = ({
             <Box key={comment._id} mt="1rem" display="flex" alignItems="start">
               <Avatar
                 src={comment.userPicturePath}
-                alt={comment.name}
+                alt={`${commentUsers[comment.userId]?.firstName || ""} ${
+                  commentUsers[comment.userId]?.lastName || ""
+                }`}
                 sx={{ width: 40, height: 40, mr: 2 }}
               />
               <Box flex={1}>
                 <Typography variant="body2" fontWeight="bold">
-                  {name || "Unknown"}
+                  {commentUsers[comment.userId]?.firstName}{" "}
+                  {commentUsers[comment.userId]?.lastName}
                 </Typography>
                 <Typography variant="caption" color="textSecondary">
                   {new Date(comment.createdAt).toLocaleString()}
